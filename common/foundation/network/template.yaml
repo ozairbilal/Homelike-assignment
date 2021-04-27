@@ -1,0 +1,508 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Networking Template
+
+##########
+
+Parameters:
+
+  varSubnetVPC:
+    Type: "String"
+    Description: "VPC CIDR"
+    Default: "UNDEFINED"
+
+  varSubnetPublicStatic1:
+    Type: "String"
+    Description: "CIDR of static public subnet in region 1"
+    Default: "UNDEFINED"
+
+  varSubnetPublic1:
+    Type: "String"
+    Description: "Public subnet CIDR"
+    Default: "UNDEFINED"
+
+  varSubnetPublic2:
+    Type: "String"
+    Description: "Public subnet CIDR"
+    Default: "UNDEFINED"
+
+  varSubnetPublic3:
+    Type: "String"
+    Description: "Public subnet CIDR"
+    Default: "UNDEFINED"
+
+  varSubnetPrivate1:
+    Type: "String"
+    Description: "Private Subnet-1 CIDR"
+    Default: "UNDEFINED"
+
+  varSubnetPrivate2:
+    Type: "String"
+    Description: "Private Subnet-2 CIDR"
+    Default: "UNDEFINED"
+
+  varSubnetPrivate3:
+    Type: "String"
+    Description: "Private Subnet-3 CIDR"
+    Default: "UNDEFINED"
+  varSubnetMiddleware1:
+    Type: "String"
+    Description: "Middleware Subnet-1 CIDR"
+    Default: "UNDEFINED"
+  varSubnetMiddleware2:
+    Type: "String"
+    Description: "Middleware Subnet-2 CIDR"
+    Default: "UNDEFINED"
+  varSubnetMiddleware3:
+    Type: "String"
+    Description: "Middleware Subnet-3 CIDR"
+    Default: "UNDEFINED"
+##########
+
+Resources:
+
+  ### VPC
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref "varSubnetVPC"
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+
+  ### NAT Gateways
+
+  IP4NAT1:
+    Type: AWS::EC2::EIP
+    Properties:
+       Domain: vpc
+
+  IP4NAT2:
+    Type: AWS::EC2::EIP
+    Properties:
+       Domain: vpc
+
+  IP4NAT3:
+    Type: AWS::EC2::EIP
+    Properties:
+       Domain: vpc
+
+  NAT1:
+    Type: AWS::EC2::NatGateway
+    DependsOn: IP4NAT1
+    Properties:
+      AllocationId: !GetAtt "IP4NAT1.AllocationId"
+      SubnetId: !Ref "SubnetPublic1"
+
+  NAT2:
+    Type: AWS::EC2::NatGateway
+    DependsOn: IP4NAT2
+    Properties:
+      AllocationId: !GetAtt "IP4NAT2.AllocationId"
+      SubnetId: !Ref "SubnetPublic2"
+
+  NAT3:
+    Type: AWS::EC2::NatGateway
+    DependsOn: IP4NAT3
+    Properties:
+      AllocationId: !GetAtt "IP4NAT3.AllocationId"
+      SubnetId: !Ref "SubnetPublic3"
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    DependsOn: VPC
+
+  InternetGatewayAttach:
+    Type: AWS::EC2::VPCGatewayAttachment
+    DependsOn: VPC
+    Properties:
+      InternetGatewayId: !Ref "InternetGateway"
+      VpcId: !Ref "VPC"
+
+  ### SUBNETS
+
+  SubnetPublic1:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      VpcId: !Ref "VPC"
+      CidrBlock: !Ref "varSubnetPublic1"
+      Tags:
+        - Key: "Name"
+          Value: "Public subnet 1"
+
+  SubnetPublicStatic1:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      VpcId: !Ref "VPC"
+      CidrBlock: !Ref "varSubnetPublicStatic1"
+      Tags:
+        - Key: "Name"
+          Value: "Public static subnet 1"
+
+  SubnetPublic2:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}b"
+      VpcId: !Ref "VPC"
+      CidrBlock: !Ref "varSubnetPublic2"
+      Tags:
+        - Key: "Name"
+          Value: "Public subnet 2"
+
+  SubnetPublic3:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}c"
+      VpcId: !Ref "VPC"
+      CidrBlock: !Ref "varSubnetPublic3"
+      Tags:
+        - Key: "Name"
+          Value: "Public subnet 3"
+
+  SubnetPrivate1:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}a"
+      VpcId: !Ref "VPC"
+      CidrBlock: !Ref "varSubnetPrivate1"
+      Tags:
+        - Key: "Name"
+          Value: "Private subnet 1"
+
+  SubnetPrivate2:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}b"
+      VpcId: !Ref "VPC"
+      CidrBlock: !Ref "varSubnetPrivate2"
+      Tags:
+        - Key: "Name"
+          Value: "Private subnet 2"
+
+  SubnetPrivate3:
+    Type: AWS::EC2::Subnet
+    DependsOn: VPC
+    Properties:
+      AvailabilityZone: !Sub "${AWS::Region}c"
+      VpcId: !Ref "VPC"
+      CidrBlock: !Ref "varSubnetPrivate3"
+      Tags:
+        - Key: "Name"
+          Value: "Private subnet 3"
+  MiddlewareSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref "varSubnetMiddleware1"
+#      MapPublicIpOnLaunch: False
+      AvailabilityZone: !Select
+        - 0
+        - Fn::GetAZs: !Ref AWS::Region
+  MiddlewareSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref "varSubnetMiddleware2"
+#      MapPublicIpOnLaunch: False
+      AvailabilityZone: !Select
+        - 1
+        - Fn::GetAZs: !Ref AWS::Region
+  MiddlewareSubnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref "varSubnetMiddleware3"
+#      MapPublicIpOnLaunch: False
+      AvailabilityZone: !Select
+        - 2
+        - Fn::GetAZs: !Ref AWS::Region
+  ### ROUTING
+
+  #### PUBLIC ROUTING TABLES
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    DependsOn:
+    - SubnetPublic1
+    - SubnetPublic2
+    - SubnetPublic3
+    Properties:
+      VpcId: !Ref "VPC"
+      Tags:
+      - Key: "Name"
+        Value: "Public network"
+
+  PublicRouteDefault:
+    Type: AWS::EC2::Route
+    DependsOn: PublicRouteTable
+    Properties:
+      RouteTableId: !Ref "PublicRouteTable"
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref "InternetGateway"
+
+  PublicRouteTableAttach1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - PublicRouteDefault
+      - SubnetPublic1
+    Properties:
+      RouteTableId: !Ref "PublicRouteTable"
+      SubnetId: !Ref "SubnetPublic1"
+
+
+  PublicRouteTableAttach2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - PublicRouteDefault
+      - SubnetPublic2
+    Properties:
+      RouteTableId: !Ref "PublicRouteTable"
+      SubnetId: !Ref "SubnetPublic2"
+
+  PublicRouteTableAttach3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - PublicRouteDefault
+      - SubnetPublic3
+    Properties:
+      RouteTableId: !Ref "PublicRouteTable"
+      SubnetId: !Ref "SubnetPublic3"
+
+  PublicRouteTablePublicStaticAttach1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - PublicRouteDefault
+      - SubnetPublicStatic1
+    Properties:
+      RouteTableId: !Ref "PublicRouteTable"
+      SubnetId: !Ref "SubnetPublicStatic1"
+
+  #### ROUTING TABLE 1
+
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    DependsOn:
+      - SubnetPrivate1
+      - SubnetPrivate2
+      - SubnetPrivate3
+    Properties:
+      VpcId: !Ref "VPC"
+      Tags:
+      - Key: "Name"
+        Value: "Private networks"
+
+  PrivateRouteDefault1:
+    Type: AWS::EC2::Route
+    DependsOn: PrivateRouteTable1
+    Properties:
+      RouteTableId: !Ref "PrivateRouteTable1"
+      DestinationCidrBlock: "0.0.0.0/0"
+      NatGatewayId: !Ref "NAT1"
+
+  PrivateRouteTableAttach1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - SubnetPrivate1
+      - PrivateRouteDefault1
+    Properties:
+      RouteTableId: !Ref "PrivateRouteTable1"
+      SubnetId: !Ref "SubnetPrivate1"
+
+  #### ROUTING TABLE 2
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    DependsOn:
+      - SubnetPrivate1
+      - SubnetPrivate2
+      - SubnetPrivate3
+    Properties:
+      VpcId: !Ref "VPC"
+      Tags:
+      - Key: "Name"
+        Value: "Private networks"
+
+  PrivateRouteDefault2:
+    Type: AWS::EC2::Route
+    DependsOn: PrivateRouteTable2
+    Properties:
+      RouteTableId: !Ref "PrivateRouteTable2"
+      DestinationCidrBlock: "0.0.0.0/0"
+      NatGatewayId: !Ref "NAT2"
+
+  PrivateRouteTableAttach2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - SubnetPrivate2
+      - PrivateRouteDefault2
+    Properties:
+      RouteTableId: !Ref "PrivateRouteTable2"
+      SubnetId: !Ref "SubnetPrivate2"
+
+  #### ROUTING TABLE 3
+
+  PrivateRouteTable3:
+    Type: AWS::EC2::RouteTable
+    DependsOn:
+      - SubnetPrivate1
+      - SubnetPrivate2
+      - SubnetPrivate3
+    Properties:
+      VpcId: !Ref "VPC"
+      Tags:
+      - Key: "Name"
+        Value: "Private networks"
+
+  PrivateRouteDefault3:
+    Type: AWS::EC2::Route
+    DependsOn: PrivateRouteTable3
+    Properties:
+      RouteTableId: !Ref "PrivateRouteTable3"
+      DestinationCidrBlock: "0.0.0.0/0"
+      NatGatewayId: !Ref "NAT3"
+
+  PrivateRouteTableAttach3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    DependsOn:
+      - SubnetPrivate3
+      - PrivateRouteDefault3
+    Properties:
+      RouteTableId: !Ref "PrivateRouteTable3"
+      SubnetId: !Ref "SubnetPrivate3"
+
+##########
+
+Outputs:
+
+  expVPCID:
+    Description: "VPC ID"
+    Value: !Ref "VPC"
+    Export:
+      Name: !Sub "${AWS::StackName}-VPC-ID"
+
+  expVPCIP:
+    Description: "VPC network CIDR block"
+    Value: !GetAtt "VPC.CidrBlock"
+    Export:
+      Name: !Sub "${AWS::StackName}-VPC-CIDR"
+
+  expNATID1:
+    Description: "NAT1 ID"
+    Value: !Ref "NAT1"
+    Export:
+      Name: !Sub "${AWS::StackName}-NAT-ID1"
+
+  expNATID2:
+    Description: "NAT2 ID"
+    Value: !Ref "NAT2"
+    Export:
+      Name: !Sub "${AWS::StackName}-NAT-ID2"
+
+  expNATID3:
+    Description: "NAT3 ID"
+    Value: !Ref "NAT3"
+    Export:
+      Name: !Sub "${AWS::StackName}-NAT-ID3"
+
+  expNATIP1:
+    Description: "NAT1 IP"
+    Value: !Ref "IP4NAT1"
+    Export:
+      Name: !Sub "${AWS::StackName}-NAT1-IP"
+
+  expNATIP2:
+    Description: "NAT2 IP"
+    Value: !Ref "IP4NAT2"
+    Export:
+      Name: !Sub "${AWS::StackName}-NAT2-IP"
+
+  expNATIP3:
+    Description: "NAT3 IP"
+    Value: !Ref "IP4NAT3"
+    Export:
+      Name: !Sub "${AWS::StackName}-NAT3-IP"
+
+  expSubnetPublicStatic1:
+    Description: "Public static subnet 1 ID "
+    Value: !Ref "SubnetPublicStatic1"
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetPublicStatic1-ID"
+
+  expSubnetPublic1:
+    Description: "Public subnet 1 ID "
+    Value: !Ref "SubnetPublic1"
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetPublic1-ID"
+
+  expSubnetPublic2:
+    Description: "Public subnet 2 ID "
+    Value: !Ref "SubnetPublic2"
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetPublic2-ID"
+
+  expSubnetPublic3:
+    Description: "Public subnet 3 ID "
+    Value: !Ref "SubnetPublic3"
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetPublic3-ID"
+
+  expSubnetPrivate1:
+    Description: "Private Subnet 1 ID"
+    Value: !Ref "SubnetPrivate1"
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetPrivate1-ID"
+
+  expSubnetPrivate2:
+    Description: "Private Subnet 2 ID"
+    Value: !Ref "SubnetPrivate2"
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetPrivate2-ID"
+
+  expSubnetPrivate3:
+    Description: "Private Subnet 3 ID"
+    Value: !Ref "SubnetPrivate3"
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetPrivate3-ID"
+  expSubnetMiddleware1:
+    Description: "Private Subnet 1 ID"
+    Value: !Ref "SubnetPrivate1"
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetMiddleware1-ID"
+
+  expSubnetMiddleware2:
+    Description: "Private Subnet 2 ID"
+    Value: !Ref "SubnetPrivate2"
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetMiddleware2-ID"
+
+  expSubnetMiddleware3:
+    Description: "Private Subnet 3 ID"
+    Value: !Ref "SubnetPrivate3"
+    Export:
+      Name: !Sub "${AWS::StackName}-SubnetMiddleware3-ID"
+  expPublicRouteTable:
+    Value: !Ref PublicRouteTable
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicRouteTable"
+
+  expPrivateRouteTable1:
+    Value: !Ref PrivateRouteTable1
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateRouteTable1"
+
+  expPrivateRouteTable2:
+    Value: !Ref PrivateRouteTable2
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateRouteTable2"
+
+  expPrivateRouteTable3:
+    Value: !Ref PrivateRouteTable3
+    Export:
+      Name: !Sub "${AWS::StackName}-PrivateRouteTable3"
+

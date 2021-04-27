@@ -1,0 +1,127 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: "Simple 3 tier web application template"
+Parameters:
+  varService:
+    Default: 'UNDEFINED'
+    Type: String
+  varSSHKey:
+    Default: 'UNDEFINED'
+    Type: String
+  VpcCidr:
+    Default: '10.1.0.0/16'
+    Type: String
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+  InstanceType:
+    Default: 't2.micro'
+    Type: String
+  SSHLocation:
+    Description: The IP address range that can be used to SSH to the EC2 instances
+    Type: String
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 0.0.0.0/0
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x
+Resources:
+
+  ELBWebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP access via port 80
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+      VpcId: !ImportValue network-VPC-ID
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn:
+      - ELBWebServerSecurityGroup
+    Properties:
+      Subnets:
+        - !ImportValue "network-SubnetMiddleware1-ID"
+        - !ImportValue "network-SubnetMiddleware2-ID"
+        - !ImportValue "network-SubnetMiddleware3-ID"
+      SecurityGroups:
+        - !Ref ELBWebServerSecurityGroup
+
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    DependsOn:
+      - DefaultTargetGroup
+      - LoadBalancer
+    Properties:
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref DefaultTargetGroup
+
+  DefaultTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: tg-default
+      VpcId: !ImportValue network-VPC-ID
+      Port: 80
+      Protocol: HTTP
+  WebServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable HTTP access via port 80
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp:
+            Ref: SSHLocation
+      VpcId: !ImportValue network-VPC-ID
+
+  AsgLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    DependsOn:
+      - WebServerSecurityGroup
+    Properties:
+      LaunchTemplateName: !Sub ${AWS::StackName}-launch-template
+      LaunchTemplateData:
+        CreditSpecification:
+          CpuCredits: Unlimited
+        ImageId: ami-016e8c6e
+        InstanceType: !Ref InstanceType
+        KeyName: !Ref varSSHKey
+        Monitoring:
+          Enabled: True
+        SecurityGroupIds:
+          - !Ref WebServerSecurityGroup
+        UserData:
+          Fn::Base64: |
+            #!/bin/bash -xe
+            yum update -y
+            yum install -y httpd24
+            echo "Welcome from the instance $(hostname -f)" > /var/www/html/index.html
+            service httpd start
+  ApplicationAsg:
+    DependsOn:
+      - LoadBalancer
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: ApplicationAsgALB
+      MinSize: '2'
+      MaxSize: '2'
+      DesiredCapacity: '2'
+      HealthCheckGracePeriod: 300
+      LaunchTemplate:
+        LaunchTemplateId: !Ref AsgLaunchTemplate
+        Version: !GetAtt AsgLaunchTemplate.LatestVersionNumber
+      VPCZoneIdentifier:
+        - !ImportValue "network-SubnetPublic1-ID"
+        - !ImportValue "network-SubnetPublic2-ID"
+        - !ImportValue "network-SubnetPublic3-ID"
+      LoadBalancerNames:
+        - !Ref LoadBalancer

@@ -1,0 +1,58 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Metadata:
+  License: Apache-2.0
+Description: 'AWS CloudFormation Template'
+Parameters:
+  varEC2InstanceSize:
+    Type: "String"
+    Description: "Name of the ecs registry"
+    Default: "t2.micro"
+Resources:
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: VPC-Security
+      GroupDescription: "Permissions for OpenVPN public container"
+      VpcId: !ImportValue network-VPC-ID
+      SecurityGroupIngress:
+        - IpProtocol: udp
+          FromPort: 1194
+          ToPort: 1194
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: tcp
+          FromPort: 945
+          ToPort: 945
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: tcp
+          FromPort: 943
+          ToPort: 943
+          CidrIp: "0.0.0.0/0"
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: "0.0.0.0/0"
+      Tags:
+        - Key: "Name"
+          Value: "Security group for openvpn"
+  VPNGatewayInstance:
+    Type: AWS::EC2::Instance
+    DependsOn:
+      - SecurityGroup
+    CreationPolicy:
+      ResourceSignal:
+        Timeout: PT15M
+    Properties:
+      DisableApiTermination: false
+      InstanceType: !Ref "varEC2InstanceSize"
+      ImageId: ami-02c6b57cb03112ebf
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      SubnetId: !ImportValue "network-SubnetPublic1-ID"
+      Tags:
+        - Key: "Name"
+          Value: "VPN gateway"

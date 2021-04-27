@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  awscli:
+    build:
+      context: "./.docker/awscli"
+    volumes:
+      - "${HOME}/.aws:/root/.aws"
+      - "${PWD}:/app"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    working_dir: "/app/.scripts"
+    command: ["/bin/bash"]
+    stdin_open: true
+    tty: true
+    logging:
+      driver: "none"
