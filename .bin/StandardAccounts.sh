@@ -13,14 +13,14 @@ while getopts a: OPTION
 done
 
 # run common scripts
-#./Common.sh ${PROFILE}
+./Common.sh ${PROFILE}
 cd ${DIR}/../.scripts
 # ## Projects
 
 ./deploy.sh -a default -p standard/projects -s nginx-ALB -r eu-central-1
 ./deploy.sh -a default -p standard/projects -s node-CLB -r eu-central-1
-#./deploy.sh -a default -p standard/projects -s mongo-RDS -r eu-central-1
-#./deploy.sh -a default -p standard/projects -s vpn-instance -r eu-central-1
+./deploy.sh -a default -p standard/projects -s mongo-RDS -r eu-central-1
+./deploy.sh -a default -p standard/projects -s vpn-instance -r eu-central-1
 
 
 
