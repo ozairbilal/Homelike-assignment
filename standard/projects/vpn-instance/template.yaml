@@ -43,9 +43,6 @@ Resources:
     Type: AWS::EC2::Instance
     DependsOn:
       - SecurityGroup
-    CreationPolicy:
-      ResourceSignal:
-        Timeout: PT15M
     Properties:
       DisableApiTermination: false
       InstanceType: !Ref "varEC2InstanceSize"
