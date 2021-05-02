@@ -108,7 +108,7 @@ Resources:
             service httpd start
   ApplicationAsg:
     DependsOn:
-      - LoadBalancer
+      - DefaultTargetGroup
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties:
       AutoScalingGroupName: ApplicationAsgALB
@@ -123,5 +123,5 @@ Resources:
         - !ImportValue "network-SubnetPublic1-ID"
         - !ImportValue "network-SubnetPublic2-ID"
         - !ImportValue "network-SubnetPublic3-ID"
-      LoadBalancerNames:
-        - !Ref LoadBalancer
+      TargetGroupARNs:
+        - !Ref DefaultTargetGroup
