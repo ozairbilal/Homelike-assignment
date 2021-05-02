@@ -13,7 +13,7 @@ while getopts a: OPTION
 done
 
 # run common scripts
-./Common.sh ${PROFILE}
+.bin/Common.sh ${PROFILE}
 cd ${DIR}/../.scripts
 # ## Projects
 
